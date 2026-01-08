@@ -3,9 +3,11 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const app = express();
-
+const documents = [];
 
 app.use(express.json());
+
+
 
 
 
@@ -46,13 +48,22 @@ app.post("/upload", upload.single("document"), (req, res) => {
 
     const fileContents = fs.readFileSync(filePath, "utf-8");
 
-    const chunks = chunkText(fileContents);
+    const chunks = fileContents.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 
-    console.log("File contents: ", fileContents);
+    chunks.forEach(chunk => {
+        documents.push({
+            text: chunk,
+            source: req.file.originalname
+        });
+    });
 
-    console.log("Chunks:", chunks);
+    console.log("Stored documents:", documents);
 
-    res.json({ message: "File uploaded and processed", filename: req.file.originalname});
+    res.json({ message: "File uploaded and processed", 
+               filename: req.file.originalname,
+               chunksStored: chunks.length,
+               preview: chunks.slice(0,3)
+    });
 });
 
 app.listen(3001, () => {
