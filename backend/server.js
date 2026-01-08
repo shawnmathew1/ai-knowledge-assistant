@@ -38,6 +38,7 @@ app.get("/health", (req, res) => {
 });
 
 
+
 app.post("/upload", upload.single("document"), (req, res) => {
 
     if (!req.file) {
@@ -64,6 +65,36 @@ app.post("/upload", upload.single("document"), (req, res) => {
                chunksStored: chunks.length,
                preview: chunks.slice(0,3)
     });
+});
+
+app.get("/documents", (req, res) => {
+    res.json(documents);
+});
+
+app.post("/query", (req, res) => {
+    const { question } = req.body;
+
+    if (!question) {
+        return res.status(400).json({error: "Question is required" });
+    }
+
+    const keywords = question
+        .toLowerCase()
+        .split(" ")
+        .filter(word => word.length > 2);
+
+    const matches = documents.filter(doc =>
+        keywords.some(keyword =>
+            doc.text.toLowerCase().includes(keyword)
+        )
+    );
+
+    res.json({
+        question,
+        matches
+    });
+
+
 });
 
 app.listen(3001, () => {
