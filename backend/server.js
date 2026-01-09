@@ -3,13 +3,21 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const app = express();
-const documents = [];
+let documents = [];
 
 app.use(express.json());
 
 
+const DATA_PATH = path.join(__dirname, "data", "documents.json");
 
+if (fs.existsSync(DATA_PATH)) {
+    const raw = fs.readFileSync(DATA_PATH, "utf-8");
+    documents = JSON.parse(raw);
+}
 
+function saveDocuments() {
+    fs.writeFileSync(DATA_PATH, JSON.stringify(documents, null, 2));
+}
 
 
 function chunkText(text, size = 300) {
@@ -76,9 +84,11 @@ app.post("/upload", upload.single("document"), (req, res) => {
         });
     });
 
+    saveDocuments();
+
     console.log("Stored documents:", documents);
 
-    res.json({ message: "File uploaded and processed", 
+    res.json({ message: "File uploaded and persisted", 
                filename: req.file.originalname,
                chunksStored: chunks.length,
                preview: chunks.slice(0,3)
@@ -115,6 +125,10 @@ app.post("/query", (req, res) => {
 
 
 });
+
+
+
+
 
 app.listen(3001, () => {
     console.log("Server running on port 3001");
