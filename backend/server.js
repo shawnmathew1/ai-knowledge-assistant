@@ -33,6 +33,24 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
+function scoreChunk(chunkText, question) {
+    const chunkWords = chunkText.toLowerCase().split(/\W+/);
+    const questionWords = question.toLowerCase().split(/\W+/);
+
+    let score = 0;
+
+    questionWords.forEach(word => {
+        if (chunkWords.includes(word)) {
+            score++;
+        }
+    });
+
+    return score;
+}
+
+
+
+
 app.get("/health", (req, res) => {
     res.json({ status: "ok" });
 });
@@ -78,20 +96,21 @@ app.post("/query", (req, res) => {
         return res.status(400).json({error: "Question is required" });
     }
 
-    const keywords = question
-        .toLowerCase()
-        .split(" ")
-        .filter(word => word.length > 2);
 
-    const matches = documents.filter(doc =>
-        keywords.some(keyword =>
-            doc.text.toLowerCase().includes(keyword)
-        )
-    );
+    const scoredResults = documents
+        .map(doc => ({
+            ...doc,
+            score: scoreChunk(doc.text, question)
+        }))
+        .filter(doc => doc.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+
 
     res.json({
         question,
-        matches
+        matches: scoredResults
     });
 
 
