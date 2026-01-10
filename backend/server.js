@@ -27,6 +27,20 @@ function embedText(text) {
     return Promise.resolve(vector);
 }
 
+function cosineSimilarity(vecA, vecB) {
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vecA.length; i++) {
+        dot += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+    }
+
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 function saveDocuments() {
     fs.writeFileSync(DATA_PATH, JSON.stringify(documents, null, 2));
 }
@@ -118,7 +132,7 @@ app.get("/documents", (req, res) => {
     res.json(documents);
 });
 
-app.post("/query", (req, res) => {
+app.post("/query", async (req, res) => {
     const { question } = req.body;
 
     if (!question) {
@@ -126,12 +140,14 @@ app.post("/query", (req, res) => {
     }
 
 
-    const scoredResults = documents
+    const questionEmbedding = await embedText(question);
+
+
+    const results = documents
         .map(doc => ({
             ...doc,
-            score: scoreChunk(doc.text, question)
+            score: cosineSimilarity(questionEmbedding, doc.embedding)
         }))
-        .filter(doc => doc.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
 
@@ -139,7 +155,7 @@ app.post("/query", (req, res) => {
 
     res.json({
         question,
-        matches: scoredResults
+        matches: results
     });
 
 

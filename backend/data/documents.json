@@ -1,6 +1,18 @@
 [
   {
     "text": "\"Hello RAG world\"",
-    "source": "example.txt"
+    "source": "example.txt",
+    "embedding": [
+      66,
+      191,
+      212,
+      222,
+      216,
+      211,
+      66,
+      82,
+      65,
+      71
+    ]
   }
 ]
