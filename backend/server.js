@@ -15,6 +15,18 @@ if (fs.existsSync(DATA_PATH)) {
     documents = JSON.parse(raw);
 }
 
+
+function embedText(text) {
+
+    const vector = new Array(10).fill(0);
+
+    for (let i = 0; i < text.length; i++) {
+        vector[i % 10] += text.charCodeAt(i);
+    }
+
+    return Promise.resolve(vector);
+}
+
 function saveDocuments() {
     fs.writeFileSync(DATA_PATH, JSON.stringify(documents, null, 2));
 }
@@ -65,7 +77,7 @@ app.get("/health", (req, res) => {
 
 
 
-app.post("/upload", upload.single("document"), (req, res) => {
+app.post("/upload", upload.single("document"), async (req, res) => {
 
     if (!req.file) {
         return res.status(400).json({ error: "No file  uploaded" });
@@ -77,12 +89,19 @@ app.post("/upload", upload.single("document"), (req, res) => {
 
     const chunks = fileContents.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 
-    chunks.forEach(chunk => {
+
+
+    for (const chunk of chunks) {
+        const embedding = await embedText(chunk);
+              
         documents.push({
             text: chunk,
-            source: req.file.originalname
+            source: req.file.originalname,
+            embedding
         });
-    });
+
+   }
+
 
     saveDocuments();
 
