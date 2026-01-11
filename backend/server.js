@@ -156,6 +156,7 @@ app.post("/query", async (req, res) => {
             ...doc,
             score: cosineSimilarity(questionEmbedding, doc.embedding)
         }))
+        .filter(doc => doc.score > 0.2)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
 
@@ -168,6 +169,49 @@ app.post("/query", async (req, res) => {
 
 
 });
+
+
+
+app.post("/rag", async (req, res) => {
+    const { question } = req.body;
+
+    if (!question) {
+        return res.status(400).json({ error: "Question is required" });
+    }
+
+    const questionEmbedding = await embedText(question);
+
+    const contextChunks = documents
+        .map(doc => ({
+            text: doc.text,
+            score: cosineSimilarity(questionEmbedding, doc.embedding)
+        }))
+        .filter(doc => doc.score > 0.2)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+    const context = contextChunks
+        .map((c, i) => `Score ${i + 1}: ${c.text}`)
+        .join("\n\n");
+
+    const prompt = `
+    You are a helpful assistant.
+    Answer the question using ONLY the contex below.
+    
+    Context:
+    ${context}
+    
+    Question:
+    ${question}
+        `.trim();
+
+    res.json({
+        prompt,
+        retrievedChunks: contextChunks
+    });
+});
+
+
 
 
 
