@@ -1,8 +1,16 @@
+require("dotenv").config();
+
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const app = express();
+const OpenAI = require("openai");
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+const USE_OPENAI = process.env.USE_OPENAI === "true";
+
 let documents = [];
 
 app.use(express.json());
@@ -16,15 +24,22 @@ if (fs.existsSync(DATA_PATH)) {
 }
 
 
-function embedText(text) {
+async function embedText(text) {
 
-    const vector = new Array(10).fill(0);
-
-    for (let i = 0; i < text.length; i++) {
-        vector[i % 10] += text.charCodeAt(i);
+    if (USE_OPENAI) {
+        const response = await openai.embeddings.create({
+            model: "text-embedding-3-small",
+            input: text
+        });
+        return response.data[0].embedding;
+    } else {
+        const vector = new Array(10).fill(0);
+        for (let i = 0; i < text.length; i++) {
+            vector[i % 10] += text.charCodeAt(i);
+        }
+        return vector;
     }
-
-    return Promise.resolve(vector);
+    
 }
 
 function cosineSimilarity(vecA, vecB) {
@@ -156,7 +171,7 @@ app.post("/query", async (req, res) => {
             ...doc,
             score: cosineSimilarity(questionEmbedding, doc.embedding)
         }))
-        .filter(doc => doc.score > 0.2)
+        .filter(doc => doc.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
 
@@ -181,18 +196,28 @@ app.post("/rag", async (req, res) => {
 
     const questionEmbedding = await embedText(question);
 
-    const contextChunks = documents
+    const retrieved = documents
         .map(doc => ({
             text: doc.text,
             score: cosineSimilarity(questionEmbedding, doc.embedding)
         }))
-        .filter(doc => doc.score > 0.2)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
 
-    const context = contextChunks
+    const context = retrieved
         .map((c, i) => `Score ${i + 1}: ${c.text}`)
         .join("\n\n");
+
+
+    if (!USE_OPENAI) {
+        return res.json({
+            question,
+            answer: "LLM disabled. Returning retrieved results only.",
+            context,
+            sources: retrieved
+        });
+    }
+
 
     const prompt = `
     You are a helpful assistant.
@@ -203,11 +228,18 @@ app.post("/rag", async (req, res) => {
     
     Question:
     ${question}
-        `.trim();
+        `
+
+    const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0
+    });
 
     res.json({
-        prompt,
-        retrievedChunks: contextChunks
+        question,
+        answer: completion.choices[0].message.content,
+        sources: retrieved
     });
 });
 
