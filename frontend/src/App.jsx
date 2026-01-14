@@ -42,14 +42,26 @@ function App() {
 
       <button
         onClick={handleAsk}
-        style={{ marginLeft: "1rem", padding: "0.5rem" }}
+        disabled={loading}
+        style={{ 
+          marginLeft: "1rem", 
+          padding: "0.5rem",
+          opacity: loading ? 0.6 : 1,
+          cursor: loading ? "not-allowed" : "pointer",
+         }}
       >
         {loading ? "Thinking..." : "Ask"}
       </button>
 
       {response && (
         <div style={{ marginTop: "2rem" }}>
-          <pre>{JSON.stringify(response, null, 2)}</pre>
+          {response.error ? (
+            <p style={{ color: "red"}}>
+              The backend might not be running
+            </p>
+          ) : (
+            <pre>{JSON.stringify(response, null, 2)}</pre>
+          )}
         </div>
       )}
     </div>
