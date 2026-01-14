@@ -36,6 +36,11 @@ function App() {
         type="text"
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            handleAsk();
+          }
+        }}
         placeholder="Ask a question..."
         style={{ padding: "0.5rem", width: "300px" }}
       />
