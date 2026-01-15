@@ -22,7 +22,7 @@ function App() {
       setResponse(data);
     } catch (err) {
       console.error(err);
-      setResponse({ error: "Something went wrong" });
+      setResponse({ error: err.message || "Backend not responding" });
     }
 
     setLoading(false);
@@ -57,6 +57,8 @@ function App() {
       >
         {loading ? "Thinking..." : "Ask"}
       </button>
+
+      {loading && <p>Thinking...</p>}
 
       {response && (
         <div style={{ marginTop: "2rem" }}>
