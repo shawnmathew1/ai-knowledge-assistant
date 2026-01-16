@@ -58,6 +58,19 @@ function App() {
         {loading ? "Thinking..." : "Ask"}
       </button>
 
+
+      <button
+        onClick={() => setQuestion("")}
+        disabled={loading}
+        style={{
+          marginLeft: "0.5rem",
+          padding: "0.5rem",
+          cursor: loading ? "not-allowed" : "pointer",
+        }}
+      >
+        Clear
+      </button>
+
       {loading && <p>Thinking...</p>}
 
       {response && (
