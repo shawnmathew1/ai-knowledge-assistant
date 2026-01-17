@@ -47,12 +47,12 @@ function App() {
 
       <button
         onClick={handleAsk}
-        disabled={loading}
+        disabled={loading || !question.trim()}
         style={{ 
           marginLeft: "1rem", 
           padding: "0.5rem",
-          opacity: loading ? 0.6 : 1,
-          cursor: loading ? "not-allowed" : "pointer",
+          opacity: loading || !question.trim() ? 0.6 : 1,
+          cursor: loading || !question.trim() ? "not-allowed" : "pointer",
          }}
       >
         {loading ? "Thinking..." : "Ask"}
